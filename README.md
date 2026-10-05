@@ -1,4 +1,4 @@
-# Aral — College Study Reviewer
+# KursoKatha — College Study Reviewer
 
 A responsive, accessible static reviewer for browsing representative Philippine college programs and TESDA qualifications. Search the catalog, filter by program or subject, and open available original notes and active-recall flashcards.
 
@@ -40,7 +40,7 @@ node --test tests/catalog.test.js
 
 ## Copyright and attribution
 
-Aral's reviewer notes and flashcards are original unless a source is explicitly credited. Do not copy textbooks, lecture slides, question banks, or other protected material into the catalog without permission or a license that allows reuse. Give attribution and follow the source's license where required; attribution alone does not grant permission. Third-party names and materials remain the property of their respective owners. The in-app notice is a transparency statement, not a grant of rights or a substitute for checking permissions.
+KursoKatha's reviewer notes and flashcards are original unless a source is explicitly credited. Do not copy textbooks, lecture slides, question banks, or other protected material into the catalog without permission or a license that allows reuse. Give attribution and follow the source's license where required; attribution alone does not grant permission. Third-party names and materials remain the property of their respective owners. The in-app notice is a transparency statement, not a grant of rights or a substitute for checking permissions.
 
 ## Use the reviewer
 

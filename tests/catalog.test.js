@@ -93,13 +93,13 @@ test("light and dark mode toggle, update accessibility state, and persist the ch
   assert.equal(themeToggle.getAttribute("aria-pressed"), "true");
   assert.equal(themeToggle.getAttribute("aria-label"), "Switch to light mode");
   assert.equal(themeColorMeta.getAttribute("content"), "#121916");
-  assert.equal(savedValues.get("aral-theme"), "dark");
+  assert.equal(savedValues.get("kursokatha-theme"), "dark");
 
   themeToggle.trigger("click");
   assert.equal(documentElement.getAttribute("data-theme"), "light");
   assert.equal(themeToggle.getAttribute("aria-pressed"), "false");
   assert.equal(themeColorMeta.getAttribute("content"), "#f5f7f2");
-  assert.equal(savedValues.get("aral-theme"), "light");
+  assert.equal(savedValues.get("kursokatha-theme"), "light");
 });
 
 test("initial render defers most topic decks and limits subject-card DOM", () => {
@@ -278,4 +278,11 @@ test("the app hides term labels and filters the catalog by program", () => {
   const tesdaCards = subjectGrid.children.map(renderedText).join(" ");
   assert.ok(!tesdaCards.includes("Core competencies"));
   assert.ok(!tesdaCards.includes("Module 2"));
+});
+
+test("site branding and search metadata use the new name", () => {
+  assert.ok(htmlSource.includes("<title>KursoKatha — Philippine College &amp; TESDA Reviewer</title>"));
+  assert.ok(htmlSource.includes('"name": "KursoKatha — College Reviewer"'));
+  assert.ok(htmlSource.includes("kursokatha"));
+  assert.ok(!htmlSource.toLocaleLowerCase().includes("aral"));
 });

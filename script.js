@@ -221,11 +221,11 @@ function applyTheme(theme, persist = false) {
   themeToggle.querySelector(".theme-toggle-icon").textContent = isDark ? "☀" : "☾";
   themeToggle.querySelector(".theme-toggle-label").textContent = `${isDark ? "Light" : "Dark"} mode`;
   themeColorMeta.setAttribute("content", isDark ? "#121916" : "#f5f7f2");
-  if (persist) window.localStorage.setItem("aral-theme", isDark ? "dark" : "light");
+  if (persist) window.localStorage.setItem("kursokatha-theme", isDark ? "dark" : "light");
 }
 
 function preferredTheme() {
-  const savedTheme = window.localStorage.getItem("aral-theme");
+  const savedTheme = window.localStorage.getItem("kursokatha-theme");
   if (savedTheme === "dark" || savedTheme === "light") return savedTheme;
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
