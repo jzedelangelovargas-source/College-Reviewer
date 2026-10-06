@@ -97,6 +97,14 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .results-heading h2 { margin: 0; font: 700 22px "Manrope", sans-serif; letter-spacing: -.8px; }
 .result-count { margin: 0 0 2px; color: #829087; font-size: 11px; }
 .active-filters { min-height: 14px; margin: 8px 0 15px; color: #829087; font-size: 11px; }
+.study-progress { margin: 0 0 18px; padding: 13px 15px; border: 1px solid var(--line); border-radius: 11px; background: var(--white); }
+.study-progress-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.study-progress h3 { margin: 0; font: 700 12px "Manrope", sans-serif; }
+.study-progress p { margin: 0; color: #829087; font-size: 10px; text-align: right; }
+.study-progress progress { width: 100%; height: 7px; display: block; margin-top: 10px; overflow: hidden; border: 0; border-radius: 10px; background: #e9efe9; accent-color: var(--green); }
+.study-progress progress::-webkit-progress-bar { border-radius: 10px; background: #e9efe9; }
+.study-progress progress::-webkit-progress-value { border-radius: 10px; background: var(--green); }
+.study-progress progress::-moz-progress-bar { border-radius: 10px; background: var(--green); }
 .subject-grid { display: grid; gap: 13px; }
 .subject-card { padding: 17px 18px 16px; border: 1px solid var(--line); border-radius: 13px; background: var(--white); transition: box-shadow .18s ease, transform .18s ease; }
 .subject-card:hover { transform: translateY(-1px); box-shadow: 0 8px 23px #263e300b; }
@@ -109,6 +117,10 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .subject-type { color: #675e87; background: #f0edf7; }
 .subject-card h3 { margin: 0; font: 700 15px "Manrope", sans-serif; letter-spacing: -.3px; }
 .subject-description { margin: 5px 0 0; color: #819087; font-size: 11px; line-height: 1.5; }
+.subject-module { margin-top: 14px; padding: 14px 15px; border: 1px solid #dfe9df; border-left: 3px solid #6f9d79; border-radius: 10px; background: #f5f9f4; }
+.module-label { margin: 0 0 5px; color: #668171; font-size: 9px; font-weight: 800; letter-spacing: .9px; text-transform: uppercase; }
+.subject-module h4 { margin: 0; font: 700 13px/1.45 "Manrope", sans-serif; }
+.module-summary { margin: 5px 0 0; color: #68796e; font-size: 11px; line-height: 1.6; }
 .topic-total { flex: 0 0 auto; margin-top: 3px; color: #89958d; font-size: 10px; }
 .topic-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; padding-top: 13px; border-top: 1px solid #edf0ea; }
 .topic-button { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; padding: 8px 10px; color: #52685c; text-align: left; border: 1px solid #e8ece6; border-radius: 7px; background: #fff; cursor: pointer; font-size: 10px; transition: border-color .16s ease, background .16s ease; }
@@ -144,11 +156,17 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .dialog-body { max-height: calc(88vh - 65px); overflow-y: auto; padding: 22px 25px 25px; }
 .topic-kicker { margin: 0 0 7px; color: #688375; font-size: 11px; font-weight: 700; }
 .dialog-body > h2 { margin: 0; font: 800 26px/1.2 "Manrope", sans-serif; letter-spacing: -1px; }
+.module-dialog-label { margin: 0 0 7px; color: #738178; font-size: 10px; font-weight: 800; letter-spacing: .7px; text-transform: uppercase; }
 .topic-summary { margin: 10px 0 21px; color: #738178; font-size: 13px; line-height: 1.7; }
 .practice-note { margin: -10px 0 18px; padding: 10px 12px; color: #6f5c31; border: 1px solid #eee2bf; border-radius: 8px; background: #fcf7e9; font-size: 11px; line-height: 1.6; }
 .practice-note[hidden] { display: none; }
 .notes-section { padding: 16px 18px; border: 1px solid #e6ede5; border-radius: 11px; background: #f4f8f2; }
 .notes-section h3, .flashcard-heading h3 { margin: 0; font: 700 14px "Manrope", sans-serif; }
+.topic-sources { margin-top: 12px; padding: 12px 15px; border: 1px solid var(--line); border-radius: 10px; background: var(--white); }
+.topic-sources[hidden] { display: none; }
+.topic-sources h3 { margin: 0; font: 700 11px "Manrope", sans-serif; }
+.topic-sources ul { display: grid; gap: 7px; margin: 9px 0 0; padding-left: 17px; color: #738178; font-size: 10px; line-height: 1.55; }
+.topic-sources a { color: #467254; font-weight: 700; text-underline-offset: 2px; }
 .notes-section h3 span { margin-right: 5px; color: #bd903b; }
 .notes-section ul { display: grid; gap: 9px; margin: 13px 0 0; padding: 0; list-style: none; }
 .notes-section li { position: relative; padding-left: 18px; color: #53675b; font-size: 12px; line-height: 1.65; }
@@ -165,6 +183,10 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 .flashcard-text { font: 600 15px/1.55 "Manrope", sans-serif; }
 .flashcard-hint { color: #889188; font-size: 10px; }
 .flashcard-controls { display: flex; justify-content: space-between; gap: 10px; margin-top: 11px; }
+.quiz-rating { margin-top: 14px; padding: 13px; border: 1px solid #e6ede5; border-radius: 10px; background: #f8faf7; }
+.quiz-score { margin: 0 0 10px; color: #53675b; font-size: 11px; font-weight: 700; }
+.quiz-rating-controls { display: flex; flex-wrap: wrap; gap: 9px; }
+.quiz-rating-hint { margin: 9px 0 0; color: #829087; font-size: 10px; line-height: 1.5; }
 .button { min-height: 38px; padding: 0 13px; border: 1px solid transparent; border-radius: 7px; cursor: pointer; font-size: 11px; font-weight: 700; }
 .button-secondary { color: #52685c; border-color: #e2e9e0; background: white; }
 .button-secondary:hover { background: #f5f8f3; }
@@ -232,6 +254,9 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 :root[data-theme="dark"] .subject-type { color: #d0c5eb; background: #363044; }
 :root[data-theme="dark"] .subject-description,
 :root[data-theme="dark"] .topic-total { color: #a9b8ae; }
+:root[data-theme="dark"] .subject-module { border-color: #3c5142; border-left-color: #82b891; background: #202d25; }
+:root[data-theme="dark"] .module-label { color: #a3c7aa; }
+:root[data-theme="dark"] .module-summary { color: #b9c9be; }
 :root[data-theme="dark"] .topic-list { border-color: var(--line); }
 :root[data-theme="dark"] .topic-button { color: #d1e0d5; border-color: #3a4940; background: #202a24; }
 :root[data-theme="dark"] .topic-button:hover { border-color: #70967c; background: #293b30; }
@@ -251,13 +276,23 @@ h1, h2, h3, p { overflow-wrap: anywhere; }
 :root[data-theme="dark"] .close-button { color: #c6d4cb; border-color: var(--line); background: #202a24; }
 :root[data-theme="dark"] .close-button:hover { color: #fff; background: #2c3a31; }
 :root[data-theme="dark"] .topic-kicker,
-:root[data-theme="dark"] .topic-summary { color: #aebfb4; }
+:root[data-theme="dark"] .topic-summary,
+:root[data-theme="dark"] .module-dialog-label { color: #aebfb4; }
 :root[data-theme="dark"] .practice-note { color: #ecdba9; border-color: #5a4e32; background: #342e20; }
 :root[data-theme="dark"] .notes-section { border-color: #33483a; background: #202d25; }
+:root[data-theme="dark"] .topic-sources { border-color: var(--line); background: #1b2420; }
+:root[data-theme="dark"] .topic-sources ul { color: #aab8ae; }
+:root[data-theme="dark"] .topic-sources a { color: #a3d0aa; }
 :root[data-theme="dark"] .notes-section li { color: #d0ded4; }
 :root[data-theme="dark"] .notes-section li::before { color: #91c99d; }
 :root[data-theme="dark"] .card-progress,
 :root[data-theme="dark"] .flashcard-hint { color: #aab8ae; }
+:root[data-theme="dark"] .study-progress p,
+:root[data-theme="dark"] .quiz-rating-hint { color: #a3b4a9; }
+:root[data-theme="dark"] .study-progress progress,
+:root[data-theme="dark"] .study-progress progress::-webkit-progress-bar { background: #2b3830; }
+:root[data-theme="dark"] .quiz-rating { border-color: #33483a; background: #202d25; }
+:root[data-theme="dark"] .quiz-score { color: #d0ded4; }
 :root[data-theme="dark"] .flashcard { color: var(--ink); border-color: #5c5136; background: #332d20; }
 :root[data-theme="dark"] .flashcard:hover { background: #3d3524; }
 :root[data-theme="dark"] .flashcard[aria-pressed="true"] { border-color: #46644c; background: #24382a; }
@@ -551,6 +586,9 @@ body {
   .welcome::after { right: -18%; }
   .results-heading { align-items: flex-start; }
   .result-count { max-width: 116px; text-align: center; line-height: 1.45; }
+  .study-progress-heading { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .study-progress p { text-align: left; }
+  .quiz-rating-controls .button { flex: 1 1 145px; }
   .subject-card { padding: 16px 14px 14px 17px; }
   .subject-card-top { flex-direction: column; }
   .topic-total { align-self: flex-start; margin-top: 0; }

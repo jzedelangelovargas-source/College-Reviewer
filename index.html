@@ -109,6 +109,13 @@
             <p class="result-count" id="result-count" aria-live="polite"></p>
           </div>
           <p class="active-filters" id="active-filters"></p>
+          <section class="study-progress" aria-labelledby="study-progress-title">
+            <div class="study-progress-heading">
+              <h3 id="study-progress-title">Your study progress</h3>
+              <p id="study-progress-summary" aria-live="polite">No quiz cards reviewed yet</p>
+            </div>
+            <progress id="study-progress-bar" max="100" value="0" aria-label="Overall study progress"></progress>
+          </section>
           <div class="subject-grid" id="subject-grid"></div>
           <button class="button button-secondary load-more-button" id="load-more-subjects" type="button" hidden>Load more subjects</button>
           <div class="empty-state" id="empty-state" hidden>
@@ -117,7 +124,7 @@
             <p>Try a different keyword or clear a filter. Baka ibang term ang gamit natin.</p>
             <button class="button button-secondary" id="empty-reset" type="button">Clear search &amp; filters</button>
           </div>
-          <p class="catalog-disclaimer" id="about"><span aria-hidden="true">✳</span> <span><strong>Coverage:</strong> This is an illustrative starter catalog, not an official or exhaustive list. Subject names and term placement are representative; colleges set their own curricula. Major, general-education, and minor/elective labels are examples, not a claim that each school requires or offers the same minor. Every subject has 20 topics, each with exactly 20 question-and-answer cards. Generated questions use the topic's review notes; for outline-only courses, these remain guided prompts, not course-specific facts or official answer keys. Answer from your instructor's lessons and check your class materials. Professional programs and TESDA qualifications may use different durations and training structures. Verify requirements with the school or TESDA. <strong>Copyright:</strong> KursoKatha's reviewer notes and flashcards are original unless a source is explicitly credited. Third-party names and materials remain with their respective owners; attribution or this notice does not grant permission to reuse protected material. Only add content you created, have permission to use, or that is properly licensed and attributed.</span></p>
+          <p class="catalog-disclaimer" id="about"><span aria-hidden="true">✳</span> <span><strong>Coverage:</strong> This is an illustrative starter catalog, not an official or exhaustive list. Subject names and term placement are representative; colleges set their own curricula. Major, general-education, and minor/elective labels are examples, not a claim that each school requires or offers the same minor. Each subject card shows a Module 1 topic and introduction. Quiz answers come from topic-specific review notes and authored answers; generic answer-framework filler is not used. Electives must be checked against the selected school's actual course outline. This catalog cannot claim 100% accuracy for every school's current syllabus. Linked resources are further reading, not a citation for every sentence. Professional programs and TESDA qualifications may use different durations and training structures. Verify requirements with the school, regulator, or TESDA. <strong>Copyright:</strong> KursoKatha's reviewer notes and flashcards are original unless a source is explicitly credited. Third-party names and materials remain with their respective owners; attribution or this notice does not grant permission to reuse protected material. Only add content you created, have permission to use, or that is properly licensed and attributed.</span></p>
         </div>
       </section>
     </main>
@@ -134,6 +141,7 @@
         <form method="dialog"><button class="close-button" aria-label="Close topic review">×</button></form>
       </div>
       <div class="dialog-body">
+        <p class="module-dialog-label" id="dialog-module"></p>
         <p class="topic-kicker" id="dialog-subject"></p>
         <h2 id="dialog-title"></h2>
         <p class="topic-summary" id="dialog-summary"></p>
@@ -141,6 +149,10 @@
         <section class="notes-section" aria-labelledby="notes-title">
           <h3 id="notes-title"><span aria-hidden="true">✳</span> The quick review</h3>
           <ul id="dialog-notes"></ul>
+        </section>
+        <section class="topic-sources" id="dialog-source-section" aria-labelledby="source-title" hidden>
+          <h3 id="source-title">Further reading and source scope</h3>
+          <ul id="dialog-sources"></ul>
         </section>
         <section class="flashcard-section" aria-labelledby="flashcard-title">
           <div class="flashcard-heading">
@@ -159,6 +171,14 @@
             <button class="button button-secondary" id="previous-card" type="button">← Previous</button>
             <button class="button button-primary" id="next-card" type="button">Next card →</button>
           </div>
+          <section class="quiz-rating" aria-label="Rate your answer">
+            <p class="quiz-score" id="quiz-score" aria-live="polite"></p>
+            <div class="quiz-rating-controls">
+              <button class="button button-secondary" id="mark-review" type="button" disabled>↺ Need to review</button>
+              <button class="button button-primary" id="mark-known" type="button" disabled>✓ I knew it</button>
+            </div>
+            <p class="quiz-rating-hint">Reveal the answer, then rate yourself honestly. Your progress is saved in this browser.</p>
+          </section>
         </section>
       </div>
     </dialog>
