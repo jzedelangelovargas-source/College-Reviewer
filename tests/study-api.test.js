@@ -7,19 +7,24 @@ const vm = require("node:vm");
 const apiSource = fs.readFileSync(path.join(__dirname, "..", "functions", "api", "study.js"), "utf8")
   .replace("export async function onRequestGet", "async function onRequestGet")
   .replace("export async function onRequestPost", "async function onRequestPost");
-const context = vm.createContext({
-  Response,
-  Request,
-  TextDecoder,
-  URL,
-  Map,
-  Date,
-  JSON,
-  console,
-  globalThis: {}
-});
-vm.runInContext(`${apiSource}\nglobalThis.handlers = { onRequestGet, onRequestPost };`, context);
-const handlers = context.globalThis.handlers;
+function loadHandlers(aiEnabled) {
+  const configuredSource = apiSource.replace("const AI_ENABLED = false;", `const AI_ENABLED = ${aiEnabled};`);
+  const context = vm.createContext({
+    Response,
+    Request,
+    TextDecoder,
+    URL,
+    Map,
+    Date,
+    JSON,
+    console,
+    globalThis: {}
+  });
+  vm.runInContext(`${configuredSource}\nglobalThis.handlers = { onRequestGet, onRequestPost };`, context);
+  return context.globalThis.handlers;
+}
+const handlers = loadHandlers(false);
+const enabledHandlers = loadHandlers(true);
 const baseUrl = "https://reviewer.example/api/study";
 const validNotes = "A primary key uniquely identifies each row in a relational database table. A foreign key references a related key.";
 
@@ -36,17 +41,38 @@ function request(body, ip = "198.51.100.20", extraHeaders = {}) {
   });
 }
 
-test("AI status reports whether the Pages AI binding exists", async () => {
-  const disabled = await handlers.onRequestGet({ env: {} });
+test("AI remains paused even if a Pages AI binding is configured", async () => {
+  const disabled = await handlers.onRequestGet({ env: { AI: {} } });
   assert.equal(disabled.status, 200);
-  assert.deepEqual(await disabled.json(), { available: false });
+  assert.deepEqual(await disabled.json(), {
+    available: false,
+    message: "AI is paused to protect the remaining usage allowance. Offline study tools are still available."
+  });
+});
 
-  const enabled = await handlers.onRequestGet({ env: { AI: {} } });
-  assert.deepEqual(await enabled.json(), { available: true });
+test("AI status reports availability when enabled in the test harness", async () => {
+  const enabled = await enabledHandlers.onRequestGet({ env: { AI: {} } });
+  assert.deepEqual(await enabled.json(), {
+    available: true,
+    message: "Cloudflare AI is ready. AI actions send the notes in this box to Cloudflare."
+  });
+});
+
+test("paused AI requests never call Workers AI", async () => {
+  let aiCalls = 0;
+  const response = await handlers.onRequestPost({
+    request: request({ mode: "tutor", notes: validNotes, question: "What is a primary key?" }),
+    env: { AI: { run: async () => { aiCalls += 1; return { response: "Unexpected." }; } } }
+  });
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    error: "AI is paused to protect the remaining usage allowance. Offline flashcards and note search are still available."
+  });
+  assert.equal(aiCalls, 0);
 });
 
 test("study API rejects cross-origin, unsupported, and oversized requests", async () => {
-  const crossOrigin = await handlers.onRequestPost({
+  const crossOrigin = await enabledHandlers.onRequestPost({
     request: request({ mode: "tutor", notes: validNotes, question: "What is a primary key?" }, "198.51.100.21", {
       Origin: "https://attacker.example"
     }),
@@ -54,13 +80,13 @@ test("study API rejects cross-origin, unsupported, and oversized requests", asyn
   });
   assert.equal(crossOrigin.status, 403);
 
-  const unsupported = await handlers.onRequestPost({
+  const unsupported = await enabledHandlers.onRequestPost({
     request: request({ mode: "unknown", notes: validNotes }, "198.51.100.22"),
     env: { AI: { run: async () => ({ response: "No" }) } }
   });
   assert.equal(unsupported.status, 400);
 
-  const oversized = await handlers.onRequestPost({
+  const oversized = await enabledHandlers.onRequestPost({
     request: request({ mode: "tutor", notes: "x".repeat(60000), question: "Question" }, "198.51.100.23"),
     env: { AI: { run: async () => ({ response: "No" }) } }
   });
@@ -69,7 +95,7 @@ test("study API rejects cross-origin, unsupported, and oversized requests", asyn
 
 test("AI module output is schema-checked and generation stays grounded in provided notes", async () => {
   let receivedMessages;
-  const response = await handlers.onRequestPost({
+  const response = await enabledHandlers.onRequestPost({
     request: request({ mode: "module", subject: "Database Management", notes: validNotes }, "198.51.100.24"),
     env: {
       AI: {
@@ -99,7 +125,7 @@ test("AI module output is schema-checked and generation stays grounded in provid
 });
 
 test("AI tutor receives the question and source notes and returns text only", async () => {
-  const response = await handlers.onRequestPost({
+  const response = await enabledHandlers.onRequestPost({
     request: request({ mode: "tutor", subject: "Database Management", notes: validNotes, question: "What identifies each row?" }, "198.51.100.25"),
     env: {
       AI: {
@@ -119,13 +145,13 @@ test("AI requests are throttled per client address within an isolate", async () 
   const ip = "198.51.100.99";
   const env = { AI: { run: async () => ({ response: "Answer from notes." }) } };
   for (let index = 0; index < 12; index += 1) {
-    const response = await handlers.onRequestPost({
+    const response = await enabledHandlers.onRequestPost({
       request: request({ mode: "tutor", notes: validNotes, question: "What is a primary key?" }, ip),
       env
     });
     assert.equal(response.status, 200);
   }
-  const limited = await handlers.onRequestPost({
+  const limited = await enabledHandlers.onRequestPost({
     request: request({ mode: "tutor", notes: validNotes, question: "What is a primary key?" }, ip),
     env
   });

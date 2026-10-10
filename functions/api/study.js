@@ -1,4 +1,5 @@
 const MODEL = "@cf/meta/llama-3.2-1b-instruct";
+const AI_ENABLED = false;
 const MAX_BODY_BYTES = 52000;
 const MAX_NOTES_CHARS = 12000;
 const REQUESTS_PER_MINUTE = 12;
@@ -95,11 +96,21 @@ async function readLimitedBody(request) {
   return new TextDecoder().decode(bytes);
 }
 
-export async function onRequestGet({ env }) {
-  return jsonResponse({ available: Boolean(env.AI) });
+export async function onRequestGet() {
+  return jsonResponse({
+    available: AI_ENABLED,
+    message: AI_ENABLED
+      ? "Cloudflare AI is ready. AI actions send the notes in this box to Cloudflare."
+      : "AI is paused to protect the remaining usage allowance. Offline study tools are still available."
+  });
 }
 
 export async function onRequestPost({ request, env }) {
+  if (!AI_ENABLED) {
+    return jsonResponse({
+      error: "AI is paused to protect the remaining usage allowance. Offline flashcards and note search are still available."
+    }, 503);
+  }
   const origin = request.headers.get("Origin");
   if (origin && origin !== new URL(request.url).origin) {
     return jsonResponse({ error: "Requests must come from this site." }, 403);
