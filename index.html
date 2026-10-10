@@ -30,7 +30,6 @@
     <script src="study-modules.js" defer></script>
     <script src="study-studio.js" defer></script>
     <script src="script.js" defer></script>
-    <script src="progress-account.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#library">Skip to reviewer library</a>
@@ -139,10 +138,9 @@
             </div>
             <progress id="study-progress-bar" max="100" value="0" aria-label="Overall study progress"></progress>
             <div class="account-progress">
-              <p id="account-status" role="status">Progress is saved in this browser.</p>
+              <p id="account-status" role="status">Account sign-up is inactive for now. Progress stays in this browser.</p>
               <div class="account-actions">
-                <button class="button button-secondary" id="open-account" type="button">Sign up / Sign in</button>
-                <button class="button button-secondary" id="account-sign-out" type="button" hidden>Sign out</button>
+                <button class="button button-secondary" id="open-account" type="button" disabled title="Account sync is not enabled">Accounts coming later</button>
               </div>
             </div>
           </section>
@@ -258,27 +256,6 @@
           <p class="studio-tutor-answer" id="studio-tutor-answer" aria-live="polite"></p>
         </section>
         <p class="studio-disclaimer">Offline cards quote sentences you provide. AI-generated explanations and modules can be wrong; verify them with your instructor and current course sources. Generated material is a study draft, not professional, medical, legal, or safety advice.</p>
-      </div>
-    </dialog>
-    <dialog class="study-dialog account-dialog" id="account-dialog" aria-labelledby="account-heading">
-      <div class="dialog-topbar">
-        <p class="eyebrow">SAVE YOUR PROGRESS</p>
-        <form method="dialog"><button class="close-button" aria-label="Close account dialog">×</button></form>
-      </div>
-      <div class="dialog-body">
-        <h2 id="account-heading">Sync your study progress</h2>
-        <p class="account-privacy-note">Create an account to sync quiz answers across devices. Only quiz progress is synced; your pasted notes and passwords are not stored by KursoKatha. Account sign-in is securely handled by Supabase.</p>
-        <form id="account-form">
-          <label class="studio-label" for="account-email">Email</label>
-          <input id="account-email" type="email" autocomplete="email" required maxlength="254">
-          <label class="studio-label" for="account-password">Password</label>
-          <input id="account-password" type="password" autocomplete="new-password" required minlength="8" maxlength="128">
-          <div class="account-actions">
-            <button class="button button-primary" type="submit" data-account-action="signup">Create account</button>
-            <button class="button button-secondary" type="submit" data-account-action="signin">Sign in</button>
-          </div>
-        </form>
-        <p class="account-message" id="account-message" role="status" aria-live="polite"></p>
       </div>
     </dialog>
     <div class="dialog-backdrop" aria-hidden="true"></div>

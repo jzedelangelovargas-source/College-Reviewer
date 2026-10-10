@@ -18,13 +18,13 @@ AI generation is **paused** while protecting the remaining Workers AI free allow
 
 ### Optional accounts and synced progress
 
-Quiz answers are graded locally and remain in the current browser by default. To enable email sign-up and sync quiz progress across devices:
+Quiz answers are graded locally and remain in the current browser. Account sign-up and cross-device syncing are inactive for now; the disabled account control is informational only. No password or account data is collected. To enable email sign-up and sync quiz progress in a future release:
 
 1. Create a Supabase project and run [`supabase/schema.sql`](supabase/schema.sql) in its SQL Editor. The table uses row-level security so signed-in users can access only their own progress.
 2. In the Cloudflare Pages project's Production environment variables, set `SUPABASE_URL` to the project URL and `SUPABASE_ANON_KEY` to its public publishable/anon key. These are used to initialize the browser auth client; never use a `service_role` key.
 3. In Supabase Authentication settings, configure the site's production URL and email redirect/confirmation settings. Then redeploy the Pages project.
 
-The website uses Supabase Auth for passwords and session handling; KursoKatha stores only quiz-progress records in the Supabase table, not pasted notes or passwords. The public GitHub Pages site and local static preview cannot provide account sync; progress remains browser-local there. Supabase availability, email delivery, and free-tier limits depend on the project owner's account and settings.
+When enabled in a future release, the website will use Supabase Auth for passwords and session handling and store only quiz-progress records in Supabase, not pasted notes. Until then, progress remains browser-local.
 
 ## Run locally
 

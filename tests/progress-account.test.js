@@ -38,12 +38,12 @@ test("account progress table restricts reads and writes to the signed-in owner",
   assert.doesNotMatch(schema, /service_role/i);
 });
 
-test("account UI is wired to sign-up, sign-in, and progress sync without collecting study notes", () => {
+test("account UI remains inactive while the future sync implementation collects no study notes", () => {
   const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
   const client = fs.readFileSync(path.join(root, "progress-account.js"), "utf8");
-  assert.match(html, /id="open-account"[^>]*>Sign up \/ Sign in/);
-  assert.match(html, /data-account-action="signup"/);
-  assert.match(html, /data-account-action="signin"/);
+  assert.match(html, /id="open-account"[^>]*disabled[^>]*>Accounts coming later/);
+  assert.match(html, /Account sign-up is inactive for now/);
+  assert.doesNotMatch(html, /id="account-form"|id="account-dialog"|progress-account\.js/);
   assert.match(client, /signUp\(\{/);
   assert.match(client, /signInWithPassword/);
   assert.match(client, /study_progress/);
