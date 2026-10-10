@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://jzedelangelovargas-source.github.io/College-Reviewer/sitemap.xml
+Sitemap: https://kursokatha-reviewer.pages.dev/sitemap.xml

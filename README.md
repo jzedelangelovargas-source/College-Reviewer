@@ -2,7 +2,7 @@
 
 A responsive, accessible static reviewer for browsing representative Philippine college programs and TESDA qualifications. Search the catalog, filter by program or subject, and open available original notes and active-recall flashcards.
 
-**Live website:** <https://jzedelangelovargas-source.github.io/College-Reviewer/>
+**Live website:** <https://kursokatha-reviewer.pages.dev/>
 
 Search engines may take time to crawl and index the website. Searching the name in Chrome depends on the search engine's index and is not guaranteed immediately.
 
