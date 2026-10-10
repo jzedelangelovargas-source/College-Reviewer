@@ -231,6 +231,11 @@ test("course subjects render a readable module with a matching topic and lesson"
   assert.ok(visibleModule);
   assert.ok(visibleModule.children[0].textContent.includes("Programming Fundamentals"));
   assert.equal(visibleModule.children[1].textContent, module.title);
+  subjectGrid.children.forEach(card => {
+    const actions = card.children.find(child => child.className === "subject-studio-actions");
+    assert.ok(actions, "every subject card should link to Study Studio");
+    assert.deepEqual(actions.children.map(button => button.textContent), ["Study with AI", "Generate AI module"]);
+  });
   const topicButton = programmingCard.children.find(child => child.className === "topic-list").children[0];
   topicButton.trigger("click");
   assert.equal(dialogModule.textContent, module.moduleTitle);

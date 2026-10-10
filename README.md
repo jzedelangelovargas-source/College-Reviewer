@@ -12,6 +12,10 @@ The catalog is an **illustrative starter catalog, not an official prospectus or 
 
 Each subject card displays **Module 1** with a topic, readable introduction, and a further-reading reference; open its topic to read the module notes and practice question. Course-specific modules are provided for the catalog subjects, while electives are explicitly guided by the selected school's syllabus. The site no longer fills courses with generic question templates whose answers merely say to consult class materials. Quiz cards are generated only from the topic's authored answers and substantive review notes. This catalog spans many programs and institutions, so it cannot honestly be called 100% accurate to every school's current syllabus. Module references are starting points, may cover a different jurisdiction, and are not citations for every sentence. Check exact coverage, terminology, and local standards with the instructor's current syllabus. After revealing an answer, learners can mark it as known or needing review; topic scores and overall progress are saved locally in the browser. This is self-assessed practice, not an automatically graded exam.
 
+The **learning hub** contains ten original, general study-skills reading modules for all learners; they are not ten course-specific lessons for every program. The **Study Studio** makes flashcards directly from text a learner provides, supports active recall and local spaced-review scheduling, and can find matching lines in those notes without an AI service. Notes are not saved by the app. Spaced-review schedules, study-module completion, and generated AI drafts are kept in that browser's local storage and are not synced across devices.
+
+Optional AI module generation and tutor responses run through a Cloudflare Pages Function using the Cloudflare Workers AI `AI` binding. The site's GitHub Pages deployment is static: offline study tools work there, but AI actions require the Cloudflare Pages deployment and its AI binding to be configured. Do not put an API token in browser code. To enable AI, connect this repository to a **Cloudflare Pages** project (not a Worker), set the project root to the repository root, keep the build command blank, and set the output directory to `.`. Then open that Pages project's **Settings → Bindings → Add → Workers AI**, create the binding named `AI`, and redeploy. Configure account usage limits or rate limiting before inviting the public: the function applies request-size and per-isolate per-IP throttles, but the in-memory throttle is best-effort and is not a billing guarantee. Workers AI usage may be billable depending on account allowance and current pricing. Review the model and Cloudflare terms before enabling it. AI output is unverified, is not guaranteed original or rights-cleared, and must be checked against course sources. Study Studio sends notes to Cloudflare only when a learner chooses an AI action; do not submit personal, confidential, or restricted material.
+
 ## Run locally
 
 No framework, package installation, or build step is required. Open `index.html` in a modern browser, or serve the project directory with any static file server. For example, if Python is installed:
@@ -22,10 +26,10 @@ python -m http.server 8000
 
 Then visit <http://localhost:8000>.
 
-Run the catalog data checks with Node.js:
+Run the catalog, study-studio, and AI endpoint checks with Node.js:
 
 ```sh
-node --test tests/catalog.test.js
+node --test tests/*.test.js
 ```
 
 ## Add a program or reviewer
@@ -51,5 +55,8 @@ KursoKatha's reviewer notes and flashcards are original unless a source is expli
 - Select an available topic to read its quick-review notes and flashcards. Use `Escape` to close the topic dialog.
 - Each subject card shows its Module 1 topic and introduction. Open it for readable notes and the linked further-reading reference. Read the reference's stated scope; confirm exact course content, local regulations, and professional requirements with your instructor or applicable authority.
 - Flip a card to reveal its answer, then choose **I knew it** or **Need to review** to rate it. Re-rating a card updates its result; progress is stored only in this browser and is not synchronized between devices.
+- Read the ten general study-skills modules in the learning hub. Mark them complete to track progress in this browser.
+- Open **Study with AI** from any subject card to use its reviewer notes in Study Studio, or open **Generate AI module** to review and generate a draft when Cloudflare AI is enabled. You can also paste your own notes, create offline flashcards, reveal answers, and schedule them with **Again / Hard / Good / Easy**. Offline note lookup searches only the text you pasted.
+- Generated AI drafts are saved only in this browser. AI services may be unavailable on the GitHub Pages URL; offline cards and note lookup continue to work without them. Read the privacy and accuracy notice in Study Studio before choosing an AI action.
 
 The interface and catalog are bilingual-friendly, with English study content and Filipino prompts. Review notes are short study aids, not a substitute for course materials or professional guidance.

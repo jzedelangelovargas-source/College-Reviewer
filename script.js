@@ -2158,9 +2158,38 @@ function renderCards(subjects) {
       placeholder.textContent = "This is a representative subject outline, not a complete syllabus. Original notes and flashcards can be added here; check your school's official curriculum.";
       topicList.append(placeholder);
     }
+    const studioActions = document.createElement("div");
+    studioActions.className = "subject-studio-actions";
+    const studyButton = document.createElement("button");
+    studyButton.className = "button button-secondary";
+    studyButton.type = "button";
+    studyButton.textContent = "Study with AI";
+    studyButton.addEventListener("click", () => {
+      window.KursoStudyStudio.open({
+        subject: subject.name,
+        key: `${program.id}:${subject.catalogRef || subject.code}`,
+        context: `${program.shortName} · ${subject.name}`,
+        notes: topics.flatMap(topic => topic.notes || [])
+      });
+    });
+    const moduleButton = document.createElement("button");
+    moduleButton.className = "button button-secondary";
+    moduleButton.type = "button";
+    moduleButton.textContent = "Generate AI module";
+    moduleButton.addEventListener("click", () => {
+      window.KursoStudyStudio.open({
+        subject: subject.name,
+        key: `${program.id}:${subject.catalogRef || subject.code}`,
+        context: `${program.shortName} · ${subject.name}`,
+        notes: topics.flatMap(topic => topic.notes || []),
+        focusGenerate: true
+      });
+    });
     article.append(top);
     if (moduleSection) article.append(moduleSection);
     article.append(topicList);
+    studioActions.append(studyButton, moduleButton);
+    article.append(studioActions);
     subjectGrid.append(article);
   });
   loadMoreSubjects.hidden = visibleSubjectLimit >= subjects.length;
@@ -2238,6 +2267,15 @@ function openTopic(program, subject, topic, button) {
     sourceList.append(item);
   });
   document.querySelector("#dialog-source-section").hidden = !(topic.sources || []).length;
+  document.querySelector("#topic-studio-launch").onclick = () => {
+    dialog.close();
+    window.KursoStudyStudio.open({
+      subject: subject.name,
+      key: `${program.id}:${subject.catalogRef || subject.code}:${topic.title}`,
+      context: `${program.shortName} · ${subject.name} · ${topic.title}`,
+      notes: topic.notes
+    });
+  };
   currentCards = topicQuizCards(topic);
   currentCardIndex = 0;
   flashcard.setAttribute("aria-pressed", "false");
