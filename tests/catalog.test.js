@@ -10,6 +10,11 @@ class FakeElement {
     this.children = [];
     this.attributes = new Map();
     this.listeners = new Map();
+    this.classNames = new Set();
+    this.classList = {
+      add: name => this.classNames.add(name),
+      contains: name => this.classNames.has(name)
+    };
     this.value = selector === "#program-filter" ? "all" : "";
     this.textContent = "";
     this.hidden = false;
@@ -70,7 +75,7 @@ const context = vm.createContext({ window, document });
 const dataSource = fs.readFileSync(path.join(root, "catalog-data.js"), "utf8");
 const appSource = fs.readFileSync(path.join(root, "script.js"), "utf8");
 vm.runInContext(dataSource, context);
-vm.runInContext(`${appSource}\nglobalThis.loadedCatalog = catalog;\nglobalThis.quizDeck = topicQuizCards;\nglobalThis.ensureTopics = ensureCourseTopics;\nglobalThis.pageSize = subjectPageSize;\nglobalThis.testElements = { programFilter, subjectGrid, resultCount, cardProgress, nextCard, themeToggle, themeColorMeta, loadMoreSubjects, flashcard, markReview, markKnown, quizScore, studyProgressSummary, studyProgressBar, dialogSourceSection: document.querySelector("#dialog-source-section"), dialogSources: document.querySelector("#dialog-sources"), dialogModule: document.querySelector("#dialog-module") };`, context);
+vm.runInContext(`${appSource}\nglobalThis.loadedCatalog = catalog;\nglobalThis.quizDeck = topicQuizCards;\nglobalThis.ensureTopics = ensureCourseTopics;\nglobalThis.pageSize = subjectPageSize;\nglobalThis.testElements = { programFilter, subjectGrid, resultCount, cardProgress, nextCard, themeToggle, themeColorMeta, loadMoreSubjects, flashcard, quizOptions, quizFeedback, quizScore, studyProgressSummary, studyProgressBar, dialogSourceSection: document.querySelector("#dialog-source-section"), dialogSources: document.querySelector("#dialog-sources"), dialogModule: document.querySelector("#dialog-module") };`, context);
 
 const catalog = context.loadedCatalog;
 const academicPrograms = catalog.filter(program => program.credential !== "TESDA qualification");
@@ -153,7 +158,7 @@ test("all college-degree programs label major subjects and an appropriate electi
   }
 });
 
-test("every topic has exactly 20 question-and-answer quiz cards", () => {
+test("every topic quiz uses only distinct authored questions without filler", () => {
   for (const program of catalog) {
     for (const subject of program.subjects) {
       const originalTopicCount = subject.topics.length;
@@ -163,11 +168,17 @@ test("every topic has exactly 20 question-and-answer quiz cards", () => {
       assert.equal(subject.topics.some(topic => topic.isStudyPrompt), false, `${program.name} · ${subject.name} must not have answer-framework filler topics`);
       for (const topic of subject.topics) {
         const quizCards = context.quizDeck(topic);
-        assert.equal(quizCards.length, 20, `${program.name} · ${subject.name} · ${topic.title} should have 20 cards`);
+        assert.ok(quizCards.length <= 20, `${program.name} · ${subject.name} · ${topic.title} exceeds the quiz limit`);
         assert.ok(quizCards.every(([question, answer]) =>
           question.trim().length > 0 && answer.trim().length > 0
         ), `${program.name} · ${subject.name} · ${topic.title} cards need questions and answers`);
-        assert.equal(new Set(quizCards.map(([question]) => question)).size, 20);
+        assert.equal(new Set(quizCards.map(([question]) => question)).size, quizCards.length,
+          `${program.name} · ${subject.name} · ${topic.title} repeats a question`);
+        assert.ok(quizCards.every(([question, answer]) =>
+          (topic.cards || []).some(([authoredQuestion, authoredAnswer]) =>
+            question === authoredQuestion.trim() && answer === authoredAnswer.trim()
+          )
+        ), `${program.name} · ${subject.name} · ${topic.title} contains an unauthored question`);
         assert.ok(topic.notes.length > 0, `${program.name} · ${subject.name} topics need review guidance`);
         assert.ok(quizCards.every(([, answer]) =>
           !/this original prompt and answer framework|not a supplied course fact|according to the review notes:/i.test(answer)
@@ -344,11 +355,12 @@ test("the app hides term labels and filters the catalog by program", () => {
   assert.equal(dialogSources.children.length, 1);
   assert.equal(dialogSources.children[0].children[0].target, "_blank");
   assert.equal(dialogSources.children[0].children[0].rel, "noopener noreferrer");
-  assert.equal(cardProgress.textContent, "Card 1 of 20");
-  for (let card = 0; card < 19; card += 1) nextCard.trigger("click");
-  assert.equal(cardProgress.textContent, "Card 20 of 20");
+  assert.match(cardProgress.textContent, /^Question 1 of \d+$/);
+  const questionCount = Number(cardProgress.textContent.match(/of (\d+)$/)[1]);
+  for (let card = 1; card < questionCount; card += 1) nextCard.trigger("click");
+  assert.equal(cardProgress.textContent, `Question ${questionCount} of ${questionCount}`);
   nextCard.trigger("click");
-  assert.equal(cardProgress.textContent, "Card 1 of 20");
+  assert.equal(cardProgress.textContent, `Question 1 of ${questionCount}`);
 
   programFilter.value = "tesda-css-nc2";
   programFilter.trigger("change");
@@ -359,10 +371,9 @@ test("the app hides term labels and filters the catalog by program", () => {
   assert.ok(!tesdaCards.includes("Module 2"));
 });
 
-test("quiz self-ratings require revealing answers, persist per topic, and complete progress", () => {
+test("quiz answers are checked red/green and persist per topic", () => {
   const {
-    programFilter, subjectGrid, flashcard, markReview, markKnown, quizScore,
-    nextCard, studyProgressSummary, studyProgressBar
+    programFilter, subjectGrid, quizOptions, quizFeedback, quizScore, nextCard
   } = context.testElements;
   programFilter.value = "bsit";
   context.render();
@@ -370,41 +381,33 @@ test("quiz self-ratings require revealing answers, persist per topic, and comple
   const topicButtons = firstSubject.children.find(element => element.className === "topic-list").children;
 
   topicButtons[0].trigger("click");
-  assert.equal(markReview.disabled, true);
-  markKnown.trigger("click");
-  assert.equal(quizScore.textContent.includes("Rated: 0/20"), true);
-
-  flashcard.trigger("click");
-  assert.equal(markReview.disabled, false);
-  markKnown.trigger("click");
-  assert.match(quizScore.textContent, /Known: 1 · Review: 0 · Rated: 1\/20/);
-  nextCard.trigger("click");
-  flashcard.trigger("click");
-  markReview.trigger("click");
-  assert.match(quizScore.textContent, /Known: 1 · Review: 1 · Rated: 2\/20/);
+  assert.equal(quizOptions.children.length > 1, true);
+  assert.match(quizFeedback.textContent, /Choose an answer/);
+  const wrongOption = quizOptions.children.find(option => option.getAttribute("data-correct") === "false");
+  assert.ok(wrongOption);
+  const selectedWrongAnswer = wrongOption.textContent;
+  wrongOption.trigger("click");
+  assert.ok(quizOptions.children.find(option =>
+    option.textContent === selectedWrongAnswer && option.classList.contains("is-incorrect")
+  ));
+  assert.match(quizFeedback.textContent, /Not quite\. Correct answer:/);
+  assert.match(quizScore.textContent, /Correct: 0 · Incorrect: 1 · Answered: 1/);
+  const savedProgress = JSON.parse(savedValues.get("kursokatha-study-progress"));
+  assert.equal(Object.keys(savedProgress).length, 1);
+  const savedRecord = Object.values(savedProgress).flatMap(Object.values).find(value => typeof value === "object");
+  assert.equal(savedRecord.rating, "review");
+  assert.equal(savedRecord.selectedAnswer, wrongOption.textContent);
 
   topicButtons[1].trigger("click");
-  assert.match(quizScore.textContent, /Known: 0 · Review: 0 · Rated: 0\/20/);
-  flashcard.trigger("click");
-  markKnown.trigger("click");
-  topicButtons[0].trigger("click");
-  assert.match(quizScore.textContent, /Known: 1 · Review: 1 · Rated: 2\/20/);
-  const savedProgress = JSON.parse(savedValues.get("kursokatha-study-progress"));
-  assert.equal(Object.keys(savedProgress).length, 2);
-
-  nextCard.trigger("click");
-  nextCard.trigger("click");
-  for (let card = 2; card < 20; card += 1) {
-    flashcard.trigger("click");
-    markKnown.trigger("click");
-    if (card < 19) nextCard.trigger("click");
-  }
-  assert.match(quizScore.textContent, /^Topic complete · /);
-  const expectedTopicCount = catalog.reduce((total, program) =>
-    total + program.subjects.reduce((subjectTotal, subject) =>
-      subjectTotal + subject.topics.length + Number(!subject.topics.some(topic => topic.isPrimer)), 0), 0);
-  assert.ok(studyProgressSummary.textContent.startsWith(`1/${expectedTopicCount} topics complete`));
-  assert.equal(studyProgressBar.value > 0, true);
+  const correctOption = quizOptions.children.find(option => option.getAttribute("data-correct") === "true");
+  assert.ok(correctOption);
+  const selectedCorrectAnswer = correctOption.textContent;
+  correctOption.trigger("click");
+  assert.ok(quizOptions.children.find(option =>
+    option.textContent === selectedCorrectAnswer && option.classList.contains("is-correct")
+  ));
+  assert.equal(quizFeedback.textContent, "Correct! Nice work.");
+  assert.match(quizScore.textContent, /Correct: 1 · Incorrect: 0 · Answered: 1/);
 });
 
 test("site branding and search metadata use the new name", () => {

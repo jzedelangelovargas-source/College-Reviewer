@@ -208,8 +208,8 @@ const cardProgress = document.querySelector("#card-progress");
 const previousCard = document.querySelector("#previous-card");
 const nextCard = document.querySelector("#next-card");
 const quizScore = document.querySelector("#quiz-score");
-const markReview = document.querySelector("#mark-review");
-const markKnown = document.querySelector("#mark-known");
+const quizOptions = document.querySelector("#quiz-options");
+const quizFeedback = document.querySelector("#quiz-feedback");
 
 let selectedSubject = "all";
 let currentCards = [];
@@ -217,6 +217,7 @@ let currentCardIndex = 0;
 let activeTopicButton = null;
 let activeProgressKey = "";
 let visibleSubjectLimit = 30;
+let currentQuizNotes = [];
 const subjectPageSize = 30;
 
 function applyTheme(theme, persist = false) {
@@ -359,7 +360,11 @@ function loadStudyProgress() {
     }
     Object.entries(ratings).forEach(([cardIndex, rating]) => {
       const index = Number(cardIndex);
-      if (!Number.isInteger(index) || index < 0 || index >= quizCardsPerTopic || !["known", "review"].includes(rating)) {
+      const validLegacyRating = ["known", "review"].includes(rating);
+      const validAnswer = rating && typeof rating === "object" && !Array.isArray(rating) &&
+        ["known", "review"].includes(rating.rating) &&
+        typeof rating.selectedAnswer === "string";
+      if (!Number.isInteger(index) || index < 0 || index >= quizCardsPerTopic || (!validLegacyRating && !validAnswer)) {
         throw new Error(`Saved quiz rating for ${topicKey} has an invalid value.`);
       }
     });
@@ -369,27 +374,89 @@ function loadStudyProgress() {
 
 const studyProgress = loadStudyProgress();
 
+window.KursoReviewerProgress = {
+  snapshot: () => JSON.parse(JSON.stringify(studyProgress)),
+  merge(remoteProgress) {
+    if (!remoteProgress || typeof remoteProgress !== "object" || Array.isArray(remoteProgress)) {
+      throw new Error("The saved account progress has an invalid format.");
+    }
+    Object.entries(remoteProgress).forEach(([topicKey, ratings]) => {
+      if (!ratings || typeof ratings !== "object" || Array.isArray(ratings)) {
+        throw new Error(`Saved account progress for ${topicKey} has an invalid format.`);
+      }
+      Object.entries(ratings).forEach(([cardIndex, value]) => {
+        const index = Number(cardIndex);
+        if (!Number.isInteger(index) || index < 0 || index >= quizCardsPerTopic || !cardAnswerRecord(value)) {
+          throw new Error(`Saved account quiz answer for ${topicKey} has an invalid value.`);
+        }
+      });
+    });
+    Object.entries(remoteProgress).forEach(([topicKey, ratings]) => {
+      if (!studyProgress[topicKey]) studyProgress[topicKey] = {};
+      Object.entries(ratings).forEach(([cardIndex, value]) => {
+        if (!cardAnswerRecord(studyProgress[topicKey][cardIndex])) {
+          studyProgress[topicKey][cardIndex] = value;
+        }
+      });
+    });
+    saveStudyProgress();
+    updateStudyProgress();
+    return JSON.parse(JSON.stringify(studyProgress));
+  }
+};
+
 function saveStudyProgress() {
   window.localStorage.setItem("kursokatha-study-progress", JSON.stringify(studyProgress));
+  window.KursoProgressAccount?.save(studyProgress);
 }
 
 function topicProgressKey(program, subject, topic) {
   return `${program.id}:${subject.catalogRef || subject.code}:${topic.title}`;
 }
 
-function updateStudyProgress() {
-  const allRatings = Object.values(studyProgress).flatMap(ratings => Object.values(ratings));
-  const reviewedCards = allRatings.length;
-  const knownCards = allRatings.filter(rating => rating === "known").length;
-  const totalTopics = allSubjects().reduce((total, { subject }) =>
-    total + subject.topics.length + Number(!subject.topics.some(topic => topic.isPrimer)), 0);
-  const totalCards = totalTopics * quizCardsPerTopic;
-  const completedTopics = Object.values(studyProgress)
-    .filter(ratings => Object.keys(ratings).length === quizCardsPerTopic).length;
-  const percent = totalCards ? reviewedCards / totalCards * 100 : 0;
+function cardAnswerRecord(value) {
+  return value && typeof value === "object" && !Array.isArray(value) &&
+    ["known", "review"].includes(value.rating) &&
+    typeof value.selectedAnswer === "string"
+    ? value
+    : null;
+}
 
-  studyProgressSummary.textContent = reviewedCards
-    ? `${completedTopics}/${totalTopics} topics complete · ${reviewedCards}/${totalCards} cards rated · ${knownCards} known`
+let quizTopicCatalog;
+function allQuizTopics() {
+  if (!quizTopicCatalog) {
+    quizTopicCatalog = catalog.flatMap(program => program.subjects.flatMap(subject => {
+      const topics = subject.topics.some(topic => topic.isPrimer)
+        ? subject.topics
+        : [...subject.topics, courseModuleFor(program, subject)];
+      return topics.map(topic => ({
+        key: topicProgressKey(program, subject, topic),
+        cardCount: topicQuizCards(topic).length
+      }));
+    }));
+  }
+  return quizTopicCatalog;
+}
+
+function updateStudyProgress() {
+  const topics = allQuizTopics().filter(topic => topic.cardCount > 0);
+  let answeredCards = 0;
+  let correctCards = 0;
+  let completedTopics = 0;
+  let totalCards = 0;
+  topics.forEach(({ key, cardCount }) => {
+    totalCards += cardCount;
+    const records = Object.entries(studyProgress[key] || {})
+      .map(([index, value]) => [Number(index), cardAnswerRecord(value)])
+      .filter(([index, record]) => record && index < cardCount);
+    answeredCards += records.length;
+    correctCards += records.filter(([, record]) => record.rating === "known").length;
+    if (cardCount > 0 && records.length === cardCount) completedTopics += 1;
+  });
+  const percent = totalCards ? answeredCards / totalCards * 100 : 0;
+
+  studyProgressSummary.textContent = answeredCards
+    ? `${completedTopics}/${topics.length} topics complete · ${answeredCards} questions answered · ${correctCards} correct`
     : "No quiz cards reviewed yet";
   studyProgressBar.value = percent;
   studyProgressBar.setAttribute("aria-valuetext", `${percent.toFixed(2)}% complete`);
@@ -397,26 +464,15 @@ function updateStudyProgress() {
 
 function updateQuizScore() {
   const ratings = studyProgress[activeProgressKey] || {};
-  const values = Object.values(ratings);
-  const known = values.filter(rating => rating === "known").length;
-  const review = values.filter(rating => rating === "review").length;
-  const completed = values.length === quizCardsPerTopic;
+  const records = Object.entries(ratings)
+    .filter(([index]) => Number(index) < currentCards.length)
+    .map(([, value]) => cardAnswerRecord(value))
+    .filter(Boolean);
+  const known = records.filter(record => record.rating === "known").length;
+  const review = records.filter(record => record.rating === "review").length;
+  const completed = currentCards.length > 0 && records.length === currentCards.length;
 
-  quizScore.textContent = `${completed ? "Topic complete" : "Topic progress"} · Known: ${known} · Review: ${review} · Rated: ${values.length}/${quizCardsPerTopic}`;
-  const rating = ratings[currentCardIndex];
-  markReview.setAttribute("aria-pressed", String(rating === "review"));
-  markKnown.setAttribute("aria-pressed", String(rating === "known"));
-  markReview.disabled = flashcard.getAttribute("aria-pressed") !== "true";
-  markKnown.disabled = flashcard.getAttribute("aria-pressed") !== "true";
-}
-
-function rateCurrentCard(rating) {
-  if (flashcard.getAttribute("aria-pressed") !== "true") return;
-  if (!studyProgress[activeProgressKey]) studyProgress[activeProgressKey] = {};
-  studyProgress[activeProgressKey][currentCardIndex] = rating;
-  saveStudyProgress();
-  updateQuizScore();
-  updateStudyProgress();
+  quizScore.textContent = `${completed ? "Topic complete" : "Topic progress"} · Correct: ${known} · Incorrect: ${review} · Answered: ${records.length}/${currentCards.length}`;
 }
 
 const fieldPrimers = [
@@ -1961,50 +2017,48 @@ function ensureCourseTopics(subject) {
   subject.outlineOnly = false;
 }
 
-const quizQuestionStems = [
-  "What is one key point stated in the review of",
-  "What detail from the notes helps explain",
-  "Which statement from the review should you remember about",
-  "According to the notes, what is one important point about",
-  "What fact from this review can you use to describe",
-  "Which idea in the notes gives useful context for",
-  "What does this review identify as important in",
-  "Which note would help you explain",
-  "What is one takeaway from the review of",
-  "What point in the notes should guide your understanding of",
-  "According to this review, what should you know about",
-  "Which reviewed detail is relevant to",
-  "What statement from the notes summarizes an aspect of",
-  "What should a learner recall from this review about",
-  "Which point in the review provides context for",
-  "What information from the notes applies to",
-  "What is one reviewed fact connected with",
-  "Which note can you use to describe",
-  "What key information does the review provide about",
-  "What should you be able to explain from the review of"
-];
-
 function topicQuizCards(topic) {
-  const authoredCards = topic.cards || [];
-  const cards = authoredCards.slice(0, quizCardsPerTopic).map(([question, answer]) => [question, answer]);
-  const notes = topic.notes.filter(note =>
-    !/original prompt and answer framework|use the definitions, examples, methods|check your response against your syllabus|not a supplied course fact|not a verified syllabus|reference is for further reading/i.test(note)
-  );
-  const facts = notes.length ? notes : authoredCards.map(([, answer]) => answer);
-  if (!facts.length) {
-    throw new Error(`Topic "${topic.title}" has no factual notes or authored answers to build its review deck.`);
-  }
+  const seenQuestions = new Set();
+  return (topic.cards || [])
+    .filter(card => Array.isArray(card) && typeof card[0] === "string" && typeof card[1] === "string")
+    .filter(([question, answer]) => {
+      const normalized = question.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\p{L}\p{N}]+/gu, " ").trim().toLocaleLowerCase();
+      if (!normalized || !answer.trim() || seenQuestions.has(normalized)) return false;
+      seenQuestions.add(normalized);
+      return true;
+    })
+    .slice(0, quizCardsPerTopic)
+    .map(([question, answer]) => [question.trim(), answer.trim()]);
+}
 
-  while (cards.length < quizCardsPerTopic) {
-    const index = cards.length;
-    const fact = facts[(index - authoredCards.length) % facts.length];
-    cards.push([
-      `${quizQuestionStems[index]} ${topic.title}?`,
-      fact
-    ]);
-  }
+function quizChoices(cards, cardIndex) {
+  if (!cards[cardIndex]) return [];
+  const correctAnswer = cards[cardIndex][1];
+  const choices = [...new Set([
+    correctAnswer,
+    ...cards.filter((_, index) => index !== cardIndex).map(([, answer]) => answer),
+    ...currentQuizNotes
+  ])].slice(0, 4);
+  if (!choices.length) return [];
+  let offset = 0;
+  for (const character of cards[cardIndex][0]) offset = (offset + character.charCodeAt(0)) % choices.length;
+  const rotated = [...choices.slice(offset), ...choices.slice(0, offset)];
+  return rotated.map(answer => ({ answer, correct: answer === correctAnswer }));
+}
 
-  return cards;
+function answerQuizCard(answer) {
+  const options = quizChoices(currentCards, currentCardIndex);
+  const choice = options.find(option => option.answer === answer);
+  if (!choice) return;
+  if (!studyProgress[activeProgressKey]) studyProgress[activeProgressKey] = {};
+  studyProgress[activeProgressKey][currentCardIndex] = {
+    rating: choice.correct ? "known" : "review",
+    selectedAnswer: answer
+  };
+  saveStudyProgress();
+  renderFlashcard();
+  updateStudyProgress();
 }
 
 function searchableText(value) {
@@ -2216,15 +2270,59 @@ function render() {
   activeFilters.textContent = filters.join("  ·  ");
 }
 
+function renderQuizOptions() {
+  quizOptions.replaceChildren();
+  const question = currentCards[currentCardIndex];
+  if (!question) {
+    quizFeedback.textContent = "There are no distinct, authored question-and-answer cards for this topic yet.";
+    return;
+  }
+
+  const savedAnswer = cardAnswerRecord(studyProgress[activeProgressKey]?.[currentCardIndex]);
+  const choices = quizChoices(currentCards, currentCardIndex);
+  if (!choices.length) {
+    quizFeedback.textContent = "This question needs an authored answer before it can be checked.";
+    return;
+  }
+
+  choices.forEach(choice => {
+    const option = document.createElement("button");
+    option.type = "button";
+    option.className = "quiz-option";
+    option.textContent = choice.answer;
+    option.setAttribute("data-correct", String(choice.correct));
+    if (savedAnswer) {
+      option.disabled = true;
+      if (choice.correct) option.classList.add("is-correct");
+      if (choice.answer === savedAnswer.selectedAnswer && !choice.correct) option.classList.add("is-incorrect");
+    } else {
+      option.addEventListener("click", () => answerQuizCard(choice.answer));
+    }
+    quizOptions.append(option);
+  });
+
+  if (savedAnswer?.rating === "known") {
+    quizFeedback.textContent = "Correct! Nice work.";
+    quizFeedback.className = "quiz-feedback is-correct";
+  } else if (savedAnswer?.rating === "review") {
+    quizFeedback.textContent = `Not quite. Correct answer: ${question[1]}`;
+    quizFeedback.className = "quiz-feedback is-incorrect";
+  } else {
+    quizFeedback.textContent = "Choose an answer to see whether it is correct. Your progress is saved in this browser.";
+    quizFeedback.className = "quiz-feedback";
+  }
+}
+
 function renderFlashcard() {
-  const [question, answer] = currentCards[currentCardIndex];
-  const isFlipped = flashcard.getAttribute("aria-pressed") === "true";
-  flashcardLabel.textContent = isFlipped ? "ANSWER" : "QUESTION";
-  flashcardText.textContent = isFlipped ? answer : question;
-  flashcardHint.textContent = isFlipped ? "Tap to see the question again ↗" : "Tap to reveal the answer ↗";
-  cardProgress.textContent = `Card ${currentCardIndex + 1} of ${currentCards.length}`;
-  previousCard.disabled = currentCardIndex === 0;
-  nextCard.textContent = currentCardIndex === currentCards.length - 1 ? "Start again ↻" : "Next card →";
+  const card = currentCards[currentCardIndex];
+  flashcardLabel.textContent = "QUESTION";
+  flashcardText.textContent = card?.[0] || "No quiz questions are available for this topic yet.";
+  flashcardHint.textContent = "Choose the best answer below.";
+  cardProgress.textContent = currentCards.length ? `Question ${currentCardIndex + 1} of ${currentCards.length}` : "No questions";
+  previousCard.disabled = !currentCards.length || currentCardIndex === 0;
+  nextCard.disabled = !currentCards.length;
+  nextCard.textContent = currentCardIndex === currentCards.length - 1 ? "Start again ↻" : "Next question →";
+  renderQuizOptions();
   updateQuizScore();
 }
 
@@ -2244,7 +2342,7 @@ function openTopic(program, subject, topic, button) {
       : "This is an original field-level study primer, not a verified summary of your exact course syllabus. The linked reference is further reading, not a source for every sentence. Check your institution's current requirements and your instructor's materials."
     : topic.isStudyPrompt
       ? "This topic uses guided practice prompts; complete the answer from your class materials. The added review cards quote this topic's notes and are not an official answer key."
-    : "The original review cards are followed by additional questions based on this topic's notes. Check these review aids against your course materials.";
+    : "Quiz questions use distinct, authored question-and-answer cards only; repeated placeholder questions are not added. Check these review aids against your course materials.";
   const notes = document.querySelector("#dialog-notes");
   notes.replaceChildren();
   topic.notes.forEach(note => {
@@ -2277,8 +2375,16 @@ function openTopic(program, subject, topic, button) {
     });
   };
   currentCards = topicQuizCards(topic);
+  currentQuizNotes = topic.notes.filter(note => typeof note === "string" && note.trim());
   currentCardIndex = 0;
-  flashcard.setAttribute("aria-pressed", "false");
+  const ratings = studyProgress[activeProgressKey];
+  if (ratings) {
+    Object.keys(ratings).forEach(index => {
+      if (Number(index) >= currentCards.length || !cardAnswerRecord(ratings[index])) delete ratings[index];
+    });
+    if (!Object.keys(ratings).length) delete studyProgress[activeProgressKey];
+    saveStudyProgress();
+  }
   renderFlashcard();
   if (!dialog.open) dialog.showModal();
 }
@@ -2308,22 +2414,15 @@ function resetFilters() {
   searchInput.focus();
 }
 
-flashcard.addEventListener("click", () => {
-  flashcard.setAttribute("aria-pressed", String(flashcard.getAttribute("aria-pressed") !== "true"));
-  renderFlashcard();
-});
 previousCard.addEventListener("click", () => {
   if (currentCardIndex > 0) currentCardIndex -= 1;
-  flashcard.setAttribute("aria-pressed", "false");
   renderFlashcard();
 });
 nextCard.addEventListener("click", () => {
+  if (!currentCards.length) return;
   currentCardIndex = currentCardIndex === currentCards.length - 1 ? 0 : currentCardIndex + 1;
-  flashcard.setAttribute("aria-pressed", "false");
   renderFlashcard();
 });
-markReview.addEventListener("click", () => rateCurrentCard("review"));
-markKnown.addEventListener("click", () => rateCurrentCard("known"));
 dialog.addEventListener("close", () => {
   if (activeTopicButton && document.contains(activeTopicButton)) activeTopicButton.focus();
 });

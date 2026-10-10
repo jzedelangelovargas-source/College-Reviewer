@@ -30,6 +30,7 @@
     <script src="study-modules.js" defer></script>
     <script src="study-studio.js" defer></script>
     <script src="script.js" defer></script>
+    <script src="progress-account.js" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#library">Skip to reviewer library</a>
@@ -137,6 +138,13 @@
               <p id="study-progress-summary" aria-live="polite">No quiz cards reviewed yet</p>
             </div>
             <progress id="study-progress-bar" max="100" value="0" aria-label="Overall study progress"></progress>
+            <div class="account-progress">
+              <p id="account-status" role="status">Progress is saved in this browser.</p>
+              <div class="account-actions">
+                <button class="button button-secondary" id="open-account" type="button">Sign up / Sign in</button>
+                <button class="button button-secondary" id="account-sign-out" type="button" hidden>Sign out</button>
+              </div>
+            </div>
           </section>
           <div class="subject-grid" id="subject-grid"></div>
           <button class="button button-secondary load-more-button" id="load-more-subjects" type="button" hidden>Load more subjects</button>
@@ -146,7 +154,7 @@
             <p>Try a different keyword or clear a filter. Baka ibang term ang gamit natin.</p>
             <button class="button button-secondary" id="empty-reset" type="button">Clear search &amp; filters</button>
           </div>
-          <p class="catalog-disclaimer" id="about"><span aria-hidden="true">✳</span> <span><strong>Coverage:</strong> This is an illustrative starter catalog, not an official or exhaustive list. Subject names and term placement are representative; colleges set their own curricula. Major, general-education, and minor/elective labels are examples, not a claim that each school requires or offers the same minor. Each subject card shows a Module 1 topic and introduction. Quiz answers come from topic-specific review notes and authored answers; generic answer-framework filler is not used. Electives must be checked against the selected school's actual course outline. This catalog cannot claim 100% accuracy for every school's current syllabus. Linked resources are further reading, not a citation for every sentence. Professional programs and TESDA qualifications may use different durations and training structures. Verify requirements with the school, regulator, or TESDA. The ten learning-hub modules teach general study strategies; they are not course syllabi. Offline flashcards quote notes entered by the learner. Optional AI-generated modules and tutor responses are unverified drafts and can be wrong; check them against current course sources. AI is available only on a properly configured Cloudflare Pages deployment, and using it sends the text in the Study Studio to Cloudflare Workers AI. Do not submit private or restricted information. <strong>Copyright:</strong> KursoKatha's authored reviewer notes and flashcards are original unless a source is explicitly credited. AI output is not guaranteed accurate, original, or free of third-party rights. Third-party names and materials remain with their respective owners; attribution or this notice does not grant permission to reuse protected material. Only add content you created, have permission to use, or that is properly licensed and attributed.</span></p>
+          <p class="catalog-disclaimer" id="about"><span aria-hidden="true">✳</span> <span><strong>Coverage:</strong> This is an illustrative starter catalog, not an official or exhaustive list. Subject names and term placement are representative; colleges set their own curricula. Major, general-education, and minor/elective labels are examples, not a claim that each school requires or offers the same minor. Each subject card shows a Module 1 topic and introduction. Quiz questions use distinct authored question-and-answer cards only; generic repeated question filler is not added, so the number of questions varies by topic. Electives must be checked against the selected school's actual course outline. This catalog cannot claim 100% accuracy for every school's current syllabus. Linked resources are further reading, not a citation for every sentence. Professional programs and TESDA qualifications may use different durations and training structures. Verify requirements with the school, regulator, or TESDA. The ten learning-hub modules teach general study strategies; they are not course syllabi. Offline flashcards quote notes entered by the learner. AI generation is paused to protect the remaining free usage allowance. Do not submit private or restricted information. <strong>Copyright:</strong> KursoKatha's authored reviewer notes and flashcards are original unless a source is explicitly credited. Third-party names and materials remain with their respective owners; attribution or this notice does not grant permission to reuse protected material. Only add content you created, have permission to use, or that is properly licensed and attributed.</span></p>
         </div>
       </section>
     </main>
@@ -185,22 +193,19 @@
             </div>
             <span class="card-progress" id="card-progress" aria-live="polite"></span>
           </div>
-          <button class="flashcard" id="flashcard" type="button" aria-pressed="false">
+          <div class="flashcard quiz-question" id="flashcard" aria-live="polite">
             <span class="flashcard-label" id="flashcard-label">QUESTION</span>
             <span class="flashcard-text" id="flashcard-text"></span>
-            <span class="flashcard-hint" id="flashcard-hint">Tap to reveal the answer ↗</span>
-          </button>
+            <span class="flashcard-hint" id="flashcard-hint">Choose the best answer below.</span>
+          </div>
+          <div class="quiz-options" id="quiz-options" role="group" aria-label="Choose an answer"></div>
           <div class="flashcard-controls">
             <button class="button button-secondary" id="previous-card" type="button">← Previous</button>
             <button class="button button-primary" id="next-card" type="button">Next card →</button>
           </div>
           <section class="quiz-rating" aria-label="Rate your answer">
             <p class="quiz-score" id="quiz-score" aria-live="polite"></p>
-            <div class="quiz-rating-controls">
-              <button class="button button-secondary" id="mark-review" type="button" disabled>↺ Need to review</button>
-              <button class="button button-primary" id="mark-known" type="button" disabled>✓ I knew it</button>
-            </div>
-            <p class="quiz-rating-hint">Reveal the answer, then rate yourself honestly. Your progress is saved in this browser.</p>
+            <p class="quiz-feedback" id="quiz-feedback" role="status" aria-live="polite">Choose an answer to see whether it is correct. Your progress is saved in this browser.</p>
           </section>
         </section>
       </div>
@@ -253,6 +258,27 @@
           <p class="studio-tutor-answer" id="studio-tutor-answer" aria-live="polite"></p>
         </section>
         <p class="studio-disclaimer">Offline cards quote sentences you provide. AI-generated explanations and modules can be wrong; verify them with your instructor and current course sources. Generated material is a study draft, not professional, medical, legal, or safety advice.</p>
+      </div>
+    </dialog>
+    <dialog class="study-dialog account-dialog" id="account-dialog" aria-labelledby="account-heading">
+      <div class="dialog-topbar">
+        <p class="eyebrow">SAVE YOUR PROGRESS</p>
+        <form method="dialog"><button class="close-button" aria-label="Close account dialog">×</button></form>
+      </div>
+      <div class="dialog-body">
+        <h2 id="account-heading">Sync your study progress</h2>
+        <p class="account-privacy-note">Create an account to sync quiz answers across devices. Only quiz progress is synced; your pasted notes and passwords are not stored by KursoKatha. Account sign-in is securely handled by Supabase.</p>
+        <form id="account-form">
+          <label class="studio-label" for="account-email">Email</label>
+          <input id="account-email" type="email" autocomplete="email" required maxlength="254">
+          <label class="studio-label" for="account-password">Password</label>
+          <input id="account-password" type="password" autocomplete="new-password" required minlength="8" maxlength="128">
+          <div class="account-actions">
+            <button class="button button-primary" type="submit" data-account-action="signup">Create account</button>
+            <button class="button button-secondary" type="submit" data-account-action="signin">Sign in</button>
+          </div>
+        </form>
+        <p class="account-message" id="account-message" role="status" aria-live="polite"></p>
       </div>
     </dialog>
     <div class="dialog-backdrop" aria-hidden="true"></div>
