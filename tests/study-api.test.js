@@ -8,7 +8,7 @@ const apiSource = fs.readFileSync(path.join(__dirname, "..", "functions", "api",
   .replace("export async function onRequestGet", "async function onRequestGet")
   .replace("export async function onRequestPost", "async function onRequestPost");
 function loadHandlers(aiEnabled) {
-  const configuredSource = apiSource.replace("const AI_ENABLED = false;", `const AI_ENABLED = ${aiEnabled};`);
+  const configuredSource = apiSource.replace(/const AI_ENABLED = (?:true|false);/, `const AI_ENABLED = ${aiEnabled};`);
   const context = vm.createContext({
     Response,
     Request,
@@ -41,7 +41,7 @@ function request(body, ip = "198.51.100.20", extraHeaders = {}) {
   });
 }
 
-test("AI remains paused even if a Pages AI binding is configured", async () => {
+test("AI can be disabled explicitly even if a Pages AI binding is configured", async () => {
   const disabled = await handlers.onRequestGet({ env: { AI: {} } });
   assert.equal(disabled.status, 200);
   assert.deepEqual(await disabled.json(), {
@@ -54,11 +54,11 @@ test("AI status reports availability when enabled in the test harness", async ()
   const enabled = await enabledHandlers.onRequestGet({ env: { AI: {} } });
   assert.deepEqual(await enabled.json(), {
     available: true,
-    message: "Cloudflare AI is ready. AI actions send the notes in this box to Cloudflare."
+    message: "Cloudflare AI is ready, subject to your account's daily usage limits. AI actions send the notes in this box to Cloudflare."
   });
 });
 
-test("paused AI requests never call Workers AI", async () => {
+test("disabled AI requests never call Workers AI", async () => {
   let aiCalls = 0;
   const response = await handlers.onRequestPost({
     request: request({ mode: "tutor", notes: validNotes, question: "What is a primary key?" }),

@@ -187,7 +187,12 @@
       }
       const result = await response.json();
       if (result.available === true) {
-        setAiStatus("Cloudflare AI is ready. AI actions send the notes in this box to Cloudflare.", true);
+        setAiStatus(
+          typeof result.message === "string" && result.message
+            ? result.message
+            : "Cloudflare AI is ready. AI actions send the notes in this box to Cloudflare.",
+          true
+        );
       } else if (typeof result.message === "string" && result.message) {
         setAiStatus(result.message, false);
       } else {

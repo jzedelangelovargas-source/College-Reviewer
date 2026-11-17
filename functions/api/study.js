@@ -1,5 +1,5 @@
 const MODEL = "@cf/meta/llama-3.2-1b-instruct";
-const AI_ENABLED = false;
+const AI_ENABLED = true;
 const MAX_BODY_BYTES = 52000;
 const MAX_NOTES_CHARS = 12000;
 const REQUESTS_PER_MINUTE = 12;
@@ -100,7 +100,7 @@ export async function onRequestGet() {
   return jsonResponse({
     available: AI_ENABLED,
     message: AI_ENABLED
-      ? "Cloudflare AI is ready. AI actions send the notes in this box to Cloudflare."
+      ? "Cloudflare AI is ready, subject to your account's daily usage limits. AI actions send the notes in this box to Cloudflare."
       : "AI is paused to protect the remaining usage allowance. Offline study tools are still available."
   });
 }

@@ -126,7 +126,8 @@ test("the interface discloses AI service and privacy requirements", () => {
   assert.match(html, /study-studio\.js/);
   assert.match(html, /Do not paste private, identifying, or restricted material/);
   assert.match(html, /Cloudflare AI/);
-  assert.match(readme, /Settings → Bindings → Add → Workers AI/);
-  assert.match(readme, /not a reliable quota or billing cap/);
-  assert.match(readme, /AI generation is \*\*paused\*\*/);
+  assert.match(html, /daily AI usage allowance/);
+  assert.match(readme, /10,000 AI neurons per day/);
+  assert.match(readme, /Workers Free plan/);
+  assert.doesNotMatch(readme, /AI generation is \*\*paused\*\*/);
 });
