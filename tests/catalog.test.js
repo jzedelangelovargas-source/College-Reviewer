@@ -75,11 +75,21 @@ const context = vm.createContext({ window, document });
 const dataSource = fs.readFileSync(path.join(root, "catalog-data.js"), "utf8");
 const appSource = fs.readFileSync(path.join(root, "script.js"), "utf8");
 vm.runInContext(dataSource, context);
-vm.runInContext(`${appSource}\nglobalThis.loadedCatalog = catalog;\nglobalThis.quizDeck = topicQuizCards;\nglobalThis.ensureTopics = ensureCourseTopics;\nglobalThis.pageSize = subjectPageSize;\nglobalThis.testElements = { programFilter, subjectGrid, resultCount, cardProgress, nextCard, themeToggle, themeColorMeta, loadMoreSubjects, flashcard, quizOptions, quizFeedback, quizScore, studyProgressSummary, studyProgressBar, dialogSourceSection: document.querySelector("#dialog-source-section"), dialogSources: document.querySelector("#dialog-sources"), dialogModule: document.querySelector("#dialog-module") };`, context);
+vm.runInContext(`${appSource}\nglobalThis.loadedCatalog = catalog;\nglobalThis.quizDeck = topicQuizCards;\nglobalThis.ensureTopics = ensureCourseTopics;\nglobalThis.pageSize = subjectPageSize;\nglobalThis.testElements = { programFilter, subjectGrid, resultCount, cardProgress, nextCard, themeToggle, themeColorMeta, loadMoreSubjects, flashcard, quizOptions, quizFeedback, quizScore, dialogSourceSection: document.querySelector("#dialog-source-section"), dialogSources: document.querySelector("#dialog-sources"), dialogModule: document.querySelector("#dialog-module") };`, context);
 
 const catalog = context.loadedCatalog;
 const academicPrograms = catalog.filter(program => program.credential !== "TESDA qualification");
 const tesdaPrograms = catalog.filter(program => program.credential === "TESDA qualification");
+
+test("account controls and the overall study-progress dashboard are removed", () => {
+  const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  const app = fs.readFileSync(path.join(root, "script.js"), "utf8");
+  assert.doesNotMatch(html, /Sign up\s*\/\s*Sign in|account-form|account-dialog|study-progress-summary|study-progress-bar/);
+  assert.doesNotMatch(html, /progress-account\.js/);
+  assert.doesNotMatch(app, /KursoProgressAccount|KursoReviewerProgress|updateStudyProgress/);
+  assert.match(app, /quiz-score/);
+  assert.match(app, /localStorage\.setItem\("kursokatha-study-progress"/);
+});
 
 test("program IDs and degree titles are unique", () => {
   assert.equal(new Set(catalog.map(program => program.id)).size, catalog.length);

@@ -192,8 +192,6 @@ const subjectNav = document.querySelector("#subject-nav");
 const subjectCount = document.querySelector("#subject-count");
 const subjectGrid = document.querySelector("#subject-grid");
 const loadMoreSubjects = document.querySelector("#load-more-subjects");
-const studyProgressSummary = document.querySelector("#study-progress-summary");
-const studyProgressBar = document.querySelector("#study-progress-bar");
 const resultCount = document.querySelector("#result-count");
 const resultsTitle = document.querySelector("#results-title");
 const resultsEyebrow = document.querySelector("#results-eyebrow");
@@ -374,40 +372,8 @@ function loadStudyProgress() {
 
 const studyProgress = loadStudyProgress();
 
-window.KursoReviewerProgress = {
-  snapshot: () => JSON.parse(JSON.stringify(studyProgress)),
-  merge(remoteProgress) {
-    if (!remoteProgress || typeof remoteProgress !== "object" || Array.isArray(remoteProgress)) {
-      throw new Error("The saved account progress has an invalid format.");
-    }
-    Object.entries(remoteProgress).forEach(([topicKey, ratings]) => {
-      if (!ratings || typeof ratings !== "object" || Array.isArray(ratings)) {
-        throw new Error(`Saved account progress for ${topicKey} has an invalid format.`);
-      }
-      Object.entries(ratings).forEach(([cardIndex, value]) => {
-        const index = Number(cardIndex);
-        if (!Number.isInteger(index) || index < 0 || index >= quizCardsPerTopic || !cardAnswerRecord(value)) {
-          throw new Error(`Saved account quiz answer for ${topicKey} has an invalid value.`);
-        }
-      });
-    });
-    Object.entries(remoteProgress).forEach(([topicKey, ratings]) => {
-      if (!studyProgress[topicKey]) studyProgress[topicKey] = {};
-      Object.entries(ratings).forEach(([cardIndex, value]) => {
-        if (!cardAnswerRecord(studyProgress[topicKey][cardIndex])) {
-          studyProgress[topicKey][cardIndex] = value;
-        }
-      });
-    });
-    saveStudyProgress();
-    updateStudyProgress();
-    return JSON.parse(JSON.stringify(studyProgress));
-  }
-};
-
 function saveStudyProgress() {
   window.localStorage.setItem("kursokatha-study-progress", JSON.stringify(studyProgress));
-  window.KursoProgressAccount?.save(studyProgress);
 }
 
 function topicProgressKey(program, subject, topic) {
@@ -420,46 +386,6 @@ function cardAnswerRecord(value) {
     typeof value.selectedAnswer === "string"
     ? value
     : null;
-}
-
-let quizTopicCatalog;
-function allQuizTopics() {
-  if (!quizTopicCatalog) {
-    quizTopicCatalog = catalog.flatMap(program => program.subjects.flatMap(subject => {
-      const topics = subject.topics.some(topic => topic.isPrimer)
-        ? subject.topics
-        : [...subject.topics, courseModuleFor(program, subject)];
-      return topics.map(topic => ({
-        key: topicProgressKey(program, subject, topic),
-        cardCount: topicQuizCards(topic).length
-      }));
-    }));
-  }
-  return quizTopicCatalog;
-}
-
-function updateStudyProgress() {
-  const topics = allQuizTopics().filter(topic => topic.cardCount > 0);
-  let answeredCards = 0;
-  let correctCards = 0;
-  let completedTopics = 0;
-  let totalCards = 0;
-  topics.forEach(({ key, cardCount }) => {
-    totalCards += cardCount;
-    const records = Object.entries(studyProgress[key] || {})
-      .map(([index, value]) => [Number(index), cardAnswerRecord(value)])
-      .filter(([index, record]) => record && index < cardCount);
-    answeredCards += records.length;
-    correctCards += records.filter(([, record]) => record.rating === "known").length;
-    if (cardCount > 0 && records.length === cardCount) completedTopics += 1;
-  });
-  const percent = totalCards ? answeredCards / totalCards * 100 : 0;
-
-  studyProgressSummary.textContent = answeredCards
-    ? `${completedTopics}/${topics.length} topics complete · ${answeredCards} questions answered · ${correctCards} correct`
-    : "No quiz cards reviewed yet";
-  studyProgressBar.value = percent;
-  studyProgressBar.setAttribute("aria-valuetext", `${percent.toFixed(2)}% complete`);
 }
 
 function updateQuizScore() {
@@ -2058,7 +1984,6 @@ function answerQuizCard(answer) {
   };
   saveStudyProgress();
   renderFlashcard();
-  updateStudyProgress();
 }
 
 function searchableText(value) {
@@ -2435,4 +2360,3 @@ document.addEventListener("keydown", event => {
 
 populateFilters();
 render();
-updateStudyProgress();
